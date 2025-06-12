@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "SOURCE_CBA_CI_value",
+  "fields": [
+    {
+      "name": "CI_ID",
+      "type": "string"
+    },
+    {
+      "name": "CI_STATE_C",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    }
+  ]
+}

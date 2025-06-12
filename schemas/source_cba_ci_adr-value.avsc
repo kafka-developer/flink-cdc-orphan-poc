@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "SOURCE_CBA_CI_ADR_value",
+  "fields": [
+    {
+      "name": "CI_ID",
+      "type": "string"
+    },
+    {
+      "name": "CI_A1_1",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    }
+  ]
+}

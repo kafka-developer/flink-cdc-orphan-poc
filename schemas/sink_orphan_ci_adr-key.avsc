@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "SINK_ORPHAN_CI_ADR_key",
+  "fields": [
+    {
+      "name": "CI_ID",
+      "type": "string"
+    }
+  ]
+}

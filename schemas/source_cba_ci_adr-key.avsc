@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "SOURCE_CBA_CI_ADR_key",
+  "fields": [
+    {
+      "name": "CI_ID",
+      "type": "string"
+    }
+  ]
+}
