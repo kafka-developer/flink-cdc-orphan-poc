@@ -1,11 +1,5 @@
+{ "CI_ID": "CBA001" }
 {
-  "key": {
-    "CI_ID": "101"
-  },
-  "value": {
-    "CI_ID": "101",
-    "CI_A1_1": {
-      "string": "Main Street"
-    }
-  }
+  "CI_ID": "CBA001",
+  "CI_A1_1": { "string": "Valid Avenue" }
 }
