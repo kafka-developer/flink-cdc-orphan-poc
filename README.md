@@ -1,33 +1,32 @@
-# flink-cdc-orphan-poc
 # Flink CDC Orphan Record Validation Pipeline
 
-This repository implements a CDC (Change Data Capture) validation pipeline using **Apache Flink SQL** on **Confluent Cloud** to identify and route orphan child records (ADR) that lack a corresponding parent record (CI).
+This proof-of-concept demonstrates a CDC (Change Data Capture) validation flow using **Apache Flink SQL on Confluent Cloud**, focusing on identifying **orphan child records** in a streaming architecture.
 
 ---
 
 ## ✅ Objective
 
-To validate whether each ADR record in the `source_cba_ci_adr` topic has a matching CI parent record in the `source_cba_ci` topic:
+Identify child records in the ADR topic that have no matching parent record in the CI topic. Route them to a dedicated "orphan" sink.
 
-* ✅ If match found → route to `sink_valid_cba_ci_adr`
-* ❌ If no match → route to `sink_orphan_ci_adr` with error reason
-
----
-
-## 📌 Topics
-
-| Role        | Topic Name              |
-| ----------- | ----------------------- |
-| Parent CI   | `source_cba_ci`         |
-| Child ADR   | `source_cba_ci_adr`     |
-| Valid ADRs  | `sink_valid_cba_ci_adr` |
-| Orphan ADRs | `sink_orphan_ci_adr`    |
+* ✅ If a matching CI\_ID is found → send to `sink_valid_cba_ci_adr`
+* ❌ If CI\_ID is missing in the parent table → send to `sink_orphan_ci_adr`
 
 ---
 
-## 🛠️ Step-by-Step Instructions
+## 📦 Topics Used
 
-### Step 1: Create Source Tables
+| Table Role      | Kafka Topic             |
+| --------------- | ----------------------- |
+| Parent Table    | `source_cba_ci`         |
+| Child Table     | `source_cba_ci_adr`     |
+| Valid ADR Sink  | `sink_valid_cba_ci_adr` |
+| Orphan ADR Sink | `sink_orphan_ci_adr`    |
+
+---
+
+## 🪄 Steps Performed
+
+### 1. Created Source Tables in Flink SQL
 
 ```sql
 CREATE TABLE SOURCE_CBA_CI (
@@ -40,9 +39,7 @@ CREATE TABLE SOURCE_CBA_CI (
   'key.format' = 'avro',
   'value.format' = 'avro-registry'
 );
-```
 
-```sql
 CREATE TABLE SOURCE_CBA_CI_ADR (
   CI_ID STRING,
   CI_A1_1 STRING,
@@ -55,7 +52,7 @@ CREATE TABLE SOURCE_CBA_CI_ADR (
 );
 ```
 
-### Step 2: Create Sink Tables
+### 2. Created Sink Tables
 
 ```sql
 CREATE TABLE SINK_VALID_CBA_CI_ADR (
@@ -68,9 +65,7 @@ CREATE TABLE SINK_VALID_CBA_CI_ADR (
   'key.format' = 'avro',
   'value.format' = 'avro-registry'
 );
-```
 
-```sql
 CREATE TABLE SINK_ORPHAN_CI_ADR (
   CI_ID STRING,
   CI_A1_1 STRING,
@@ -84,100 +79,127 @@ CREATE TABLE SINK_ORPHAN_CI_ADR (
 );
 ```
 
-### Step 3: Insert Logic
-
-```sql
-INSERT INTO SINK_ORPHAN_CI_ADR
-SELECT
-  adr.CI_ID,
-  adr.CI_A1_1,
-  'No matching CI_ID in SOURCE_CBA_CI' AS ERROR_REASON
-FROM SOURCE_CBA_CI_ADR adr
-LEFT JOIN SOURCE_CBA_CI ci
-ON adr.CI_ID = ci.CI_ID
-WHERE ci.CI_ID IS NULL;
-```
+### 3. Insert Queries
 
 ```sql
 INSERT INTO SINK_VALID_CBA_CI_ADR
-SELECT
-  adr.CI_ID,
-  adr.CI_A1_1
+SELECT adr.CI_ID, adr.CI_A1_1
 FROM SOURCE_CBA_CI_ADR adr
-JOIN SOURCE_CBA_CI ci
-ON adr.CI_ID = ci.CI_ID;
+JOIN SOURCE_CBA_CI ci ON adr.CI_ID = ci.CI_ID;
+
+INSERT INTO SINK_ORPHAN_CI_ADR
+SELECT adr.CI_ID, adr.CI_A1_1, 'No matching CI_ID in SOURCE_CBA_CI' AS ERROR_REASON
+FROM SOURCE_CBA_CI_ADR adr
+LEFT JOIN SOURCE_CBA_CI ci ON adr.CI_ID = ci.CI_ID
+WHERE ci.CI_ID IS NULL;
 ```
 
-### Step 4: Produce Test Records
+### 4. Schemas Used (All JSON-formatted Avro)
 
-#### Valid Parent Record
+#### Key Schema (All Tables)
 
-Topic: `source_cba_ci`
+```json
+{
+  "type": "record",
+  "name": "key",
+  "namespace": "org.apache.flink.avro.generated.record",
+  "fields": [
+    { "name": "CI_ID", "type": "string" }
+  ]
+}
+```
+
+#### Value Schemas
+
+* **source\_cba\_ci**
+
+```json
+{
+  "type": "record",
+  "name": "SOURCE_CBA_CI_value",
+  "namespace": "org.apache.flink.avro.generated.record",
+  "fields": [
+    { "name": "CI_ID", "type": "string" },
+    { "name": "CI_STATE_C", "type": ["null", "string"], "default": null }
+  ]
+}
+```
+
+* **source\_cba\_ci\_adr**
+
+```json
+{
+  "type": "record",
+  "name": "SOURCE_CBA_CI_ADR_value",
+  "namespace": "org.apache.flink.avro.generated.record",
+  "fields": [
+    { "name": "CI_ID", "type": "string" },
+    { "name": "CI_A1_1", "type": ["null", "string"], "default": null }
+  ]
+}
+```
+
+* **sink\_orphan\_ci\_adr**
+
+```json
+{
+  "type": "record",
+  "name": "SINK_ORPHAN_CI_ADR_value",
+  "namespace": "org.apache.flink.avro.generated.record",
+  "fields": [
+    { "name": "CI_ID", "type": "string" },
+    { "name": "CI_A1_1", "type": ["null", "string"], "default": null },
+    { "name": "ERROR_REASON", "type": ["null", "string"], "default": null }
+  ]
+}
+```
+
+---
+
+## 🔎 Validation Data
+
+### Valid Message
+
+* Topic: `source_cba_ci`
 
 ```json
 // Key
 { "CI_ID": "CBA202" }
 // Value
-{ "CI_ID": "CBA202", "CI_STATE_C": { "string": "ACTIVE" } }
+{ "CI_STATE_C": { "string": "ACTIVE" } }
 ```
 
-#### Valid ADR Record
-
-Topic: `source_cba_ci_adr`
+* Topic: `source_cba_ci_adr`
 
 ```json
 // Key
 { "CI_ID": "CBA202" }
 // Value
-{ "CI_ID": "CBA202", "CI_A1_1": { "string": "Green Valley" } }
+{ "CI_A1_1": { "string": "Main St" } }
 ```
 
-#### Orphan ADR Record
+### Orphan Message
 
-Topic: `source_cba_ci_adr`
+* Topic: `source_cba_ci_adr`
 
 ```json
 // Key
-{ "CI_ID": "CBA404" }
+{ "CI_ID": "CBA999" }
 // Value
-{ "CI_ID": "CBA404", "CI_A1_1": { "string": "Missing Link Road" } }
+{ "CI_A1_1": { "string": "Unknown Rd" } }
 ```
 
 ---
 
-## 🔍 Expected Behavior
+## ✅ Output Expectations
 
-| Input CI\_ID | Parent Exists? | Sink Output             |
-| ------------ | -------------- | ----------------------- |
-| `CBA202`     | ✅ Yes          | `sink_valid_cba_ci_adr` |
-| `CBA404`     | ❌ No           | `sink_orphan_ci_adr`    |
-
----
-
-## 📁 Folder Structure
-
-```
-flink-cdc-orphan-validation/
-├── create-source-tables.sql
-├── create-sink-tables.sql
-├── insert-queries.sql
-├── test-messages/
-│   ├── valid-parent.json
-│   ├── valid-adr.json
-│   └── orphan-adr.json
-└── README.md
-```
+| CI\_ID | Exists in CI? | Output Topic              |
+| ------ | ------------- | ------------------------- |
+| CBA202 | ✅ Yes         | sink\_valid\_cba\_ci\_adr |
+| CBA999 | ❌ No          | sink\_orphan\_ci\_adr     |
 
 ---
 
-## 💬 Notes
-
-* Flink SQL jobs must be created using **Confluent Cloud UI**.
-* Topics must use **Avro + Schema Registry** for type enforcement.
-* `ORPHAN` sink topic is analogous to a **dead letter queue (DLQ)**.
-
----
-
-## 🧑‍💻 Author
+## 🧑 Author
 
 Prateek
