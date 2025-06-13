@@ -166,7 +166,7 @@ WHERE ci.CI_ID IS NULL;
 // Key
 { "CI_ID": "CBA202" }
 // Value
-{ "CI_STATE_C": { "string": "ACTIVE" } }
+{ "CI_ID": "CBA202", "CI_STATE_C": { "string": "ACTIVE" } }
 ```
 
 * Topic: `source_cba_ci_adr`
@@ -175,7 +175,7 @@ WHERE ci.CI_ID IS NULL;
 // Key
 { "CI_ID": "CBA202" }
 // Value
-{ "CI_A1_1": { "string": "Main St" } }
+{ "CI_ID": "CBA202", "CI_A1_1": { "string": "Main St" } }
 ```
 
 ### Orphan Message
@@ -186,7 +186,7 @@ WHERE ci.CI_ID IS NULL;
 // Key
 { "CI_ID": "CBA999" }
 // Value
-{ "CI_A1_1": { "string": "Unknown Rd" } }
+{ "CI_ID": "CBA999", "CI_A1_1": { "string": "Unknown Rd" } }
 ```
 
 ---
