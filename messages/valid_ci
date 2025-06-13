@@ -1,11 +1,5 @@
+{ "CI_ID": "CBA001" }
 {
-  "key": {
-    "CI_ID": "101"
-  },
-  "value": {
-    "CI_ID": "101",
-    "CI_STATE_C": {
-      "string": "ACTIVE"
-    }
-  }
+  "CI_ID": "CBA001",
+  "CI_STATE_C": { "string": "ACTIVE" }
 }
