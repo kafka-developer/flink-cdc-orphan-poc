@@ -1,14 +1,15 @@
 # Flink CDC Orphan Record Validation Pipeline
-## Logical Flow
-Child records from source_cba_ci_adr are streamed into Flink.
 
-Each record’s CI_ID is LEFT JOINED with records in the parent table SOURCE_CBA_CI (i.e., topic source_cba_ci).
+## 🧠 Logical Flow
+1. Child records from source_cba_ci_adr are streamed into Flink.
 
-If the CI_ID exists in source_cba_ci, it's a valid record.
+2. Each record’s CI_ID is LEFT JOINED with records in the parent table SOURCE_CBA_CI (i.e., topic source_cba_ci).
 
-If the CI_ID does not exist in source_cba_ci, it's marked as orphan and sent to sink_orphan_ci_adr.
+3. If the CI_ID exists in source_cba_ci, it's a valid record.
 
-This proof-of-concept demonstrates a CDC (Change Data Capture) validation flow using **Apache Flink SQL on Confluent Cloud**, focusing on identifying **orphan child records** in a streaming architecture.
+4. If the CI_ID does not exist in source_cba_ci, it's marked as orphan and sent to sink_orphan_ci_adr.
+
+## This proof-of-concept demonstrates a CDC (Change Data Capture) validation flow using **Apache Flink SQL on Confluent Cloud**, focusing on identifying **orphan child records** in a streaming architecture.
 
 ---
 
